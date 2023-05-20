@@ -12,25 +12,17 @@ export async function main(ns) {
 	const endTime 	= ns.args[2];
 	const time 		= ns.args[3];
 	const type 		= ns.args[4];
-	
-	const delayMS1 = Date.now() - (endTime - time);
-
-	if (delayMS1 > 0) ns.tprint(`${type} - started ${delayMS1}ms late.`);
-
-	ns.writePort(19, Math.max(delayMS1,0));
 
 	const actualStartTime = Date.now();
-	const resultMessage = "Weakened: " + await ns.weaken(target, {additionalMsec: (delayMS1 < 0) ? 0 : delayMS1});
+	const delayMS1 = endTime - time - actualStartTime;
+	
+	await ns.weaken(target, {additionalMsec: (delayMS1 < 0) ? 0 : delayMS1});
 	const actualEndTime = Date.now();
 
-	const delayMS2 = actualStartTime - endTime;
+	const delayMS2 = actualEndTime - endTime;
 	
 	const port = ns.getPortHandle(20);
+	port.tryWrite(batchID);
 	port.tryWrite(type);
-	port.tryWrite(endTime);
-	port.tryWrite(actualStartTime);
-	port.tryWrite(actualEndTime);
-	port.tryWrite(delayMS1);
 	port.tryWrite(delayMS2);
-	port.tryWrite(resultMessage);
 }

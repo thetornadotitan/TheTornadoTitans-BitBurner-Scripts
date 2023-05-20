@@ -23,7 +23,10 @@ export async function main(ns) {
 				replicateFiles(ns, [hackScript, growScript, weakScript], server);
 		})
 
-		const usableServers = ["home", ...allServers.filter(server => ns.hasRootAccess(server) && ns.getServerMaxRam(server) >= 2)];
+		const usableServers = allServers.filter(server => ns.hasRootAccess(server) && ns.getServerMaxRam(server) >= 2).sort((a,b) => {
+			return ns.getServerMaxRam(b) - ns.getServerMaxRam(a);
+		});
+		usableServers.push("home");
 		
 		const targetServersPre = allServers.filter(
 			server => ns.getServerMaxMoney(server) > 0 && 
@@ -55,9 +58,9 @@ export async function main(ns) {
 
 			targetServers.forEach((info, target, targetServers) => {
 				const targteInfo = info;
-				if (targteInfo.hack.running && ns.getTimeSinceLastAug() >= targteInfo.hack.finishMilis) {targteInfo.hack.running = false; targteInfo.hack.threads = 0}
-				if (targteInfo.grow.running && ns.getTimeSinceLastAug() >= targteInfo.grow.finishMilis) {targteInfo.grow.running = false; targteInfo.grow.threads = 0}
-				if (targteInfo.weak.running && ns.getTimeSinceLastAug() >= targteInfo.weak.finishMilis) {targteInfo.weak.running = false; targteInfo.weak.threads = 0}
+				if (targteInfo.hack.running && Date.now() >= targteInfo.hack.finishMilis) {targteInfo.hack.running = false; targteInfo.hack.threads = 0}
+				if (targteInfo.grow.running && Date.now() >= targteInfo.grow.finishMilis) {targteInfo.grow.running = false; targteInfo.grow.threads = 0}
+				if (targteInfo.weak.running && Date.now() >= targteInfo.weak.finishMilis) {targteInfo.weak.running = false; targteInfo.weak.threads = 0}
 
 				if (ns.getServerSecurityLevel(target) > ns.getServerMinSecurityLevel(target)) {
 					const currentThreads = targteInfo.weak.threads;
@@ -68,7 +71,7 @@ export async function main(ns) {
 						ns.exec(weakScript, host, finalThreads, target);
 						availRam -= finalThreads * ns.getScriptRam(weakScript);
 						targteInfo.weak.running = true;
-						targteInfo.weak.finishMilis = ns.getTimeSinceLastAug() + ns.getWeakenTime(target);
+						targteInfo.weak.finishMilis = Date.now() + ns.getWeakenTime(target);
 						targteInfo.weak.threads += finalThreads;
 					}
 				}
@@ -88,7 +91,7 @@ export async function main(ns) {
 						ns.exec(growScript, host, finalThreads, target);
 						availRam -= finalThreads * ns.getScriptRam(growScript);
 						targteInfo.grow.running = true;
-						targteInfo.grow.finishMilis = ns.getTimeSinceLastAug() + ns.getGrowTime(target);
+						targteInfo.grow.finishMilis = Date.now() + ns.getGrowTime(target);
 						targteInfo.grow.threads += finalThreads;
 					}
 				} else if (ns.getServerSecurityLevel(target) <= ns.getServerMinSecurityLevel(target) && ns.hackAnalyzeChance(target) > 0.10){
@@ -100,7 +103,7 @@ export async function main(ns) {
 						ns.exec(hackScript, host, finalThreads, target);
 						availRam -= finalThreads * ns.getScriptRam(hackScript);
 						targteInfo.hack.running = true;
-						targteInfo.hack.finishMilis = ns.getTimeSinceLastAug() + ns.getHackTime(target);
+						targteInfo.hack.finishMilis = Date.now() + ns.getHackTime(target);
 						targteInfo.hack.threads += finalThreads;
 					}
 				}
@@ -118,7 +121,7 @@ export async function main(ns) {
 		ns.print(`Status: 🖥️:${usableServers.length} 🎯:${targetServers.size} 💪:${workingMachines} 💤:${sleepingMachines}`);
 		targetServers.forEach((info, target, targetServers) => {
 			if (info.hack.running || info.grow.running || info.weak.running)
-				ns.print(`└${target.padEnd(20)} 🛡️:${info.weak.running?"✅":"❌"}  📈:${info.grow.running?"✅":"❌"}  💸:${info.hack.running?"✅":"❌"}  🧵:${(info.hack.threads + info.grow.threads + info.weak.threads).toString().padEnd(10)} 💰:${formatUSD(ns, ns.getServerMaxMoney(target)).padStart(25)} (%${Math.round((ns.getServerMoneyAvailable(target) / ns.getServerMaxMoney(target)) * 100).toString().padStart(3)})`);
+				ns.print(`└ ${target.padEnd(20)}  🧵:${(info.hack.threads + info.grow.threads + info.weak.threads).toString().padEnd(8)}🛡️:${info.weak.running?"✅":"❌"}  📈:${info.grow.running?"✅":"❌"}  💸:${info.hack.running?"✅":"❌"}  💰:${(ns.formatNumber(ns.getServerMaxMoney(target))).padStart(9)} (%${Math.round((ns.getServerMoneyAvailable(target) / ns.getServerMaxMoney(target)) * 100).toString().padStart(3)})`);
 		});
 		
 		await ns.sleep(0);

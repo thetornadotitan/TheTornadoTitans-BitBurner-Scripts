@@ -29,16 +29,25 @@ export async function main(ns) {
 
 		ns.print(`------------Server List:------------`);
 		servers.forEach(server => {
-			ns.print(server.padEnd(13) + `- ${ns.getServerMaxRam(server)}`);
+			let ramVal = ns.getServerMaxRam(server);
+			let postFix = "GB";
+			if(ramVal > 1000000) {
+				ramVal = Math.floor(ramVal / 1000000);
+				postFix = "PB"
+			} else if (ramVal > 1000) {
+				ramVal = Math.floor(ramVal / 1000);
+				postFix = "TB"
+			}
+			ns.print(server.padEnd(13) + `- ${ramVal} ${postFix}`);
 			moneyInvested += ns.getPurchasedServerCost(ns.getServerMaxRam(server));
 		})
 		ns.print(`------------------------------------`);
 		
 		ns.print(`Servers Info`);
 		ns.print(`Servers: ${numServers}/${limit}`);
-		ns.print(`Cost for Next Server: ${formatUSD(ns, cost)}`);
-		ns.print(`Cost per Server Upgrade: ${formatUSD(ns, ns.getPurchasedServerCost(currentHighestRam))}`);
-		ns.print(`Money Invested: ${formatUSD(ns, moneyInvested)}`);
+		ns.print(`Cost for Next Server: \$${ns.formatNumber(cost)}`);
+		ns.print(`Cost per Server Upgrade: \$${ns.formatNumber(ns.getPurchasedServerCost(currentHighestRam))}`);
+		ns.print(`Money Invested: \$${ns.formatNumber(moneyInvested)}`);
 
 		await ns.sleep(10);
 	}
